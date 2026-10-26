@@ -22,6 +22,7 @@ env:
   AR_USER: espressif
   AR_SOURCE_BRANCH: master
   AR_COMMIT: e7c1e8cd4
+  TINYUSB_COMMIT: 88c7f0b81
   IDF_BRANCH: release/v5.5
   IDF_TAG: v5.5.5
   EXPECT_IDF: b774170ff4
@@ -57,6 +58,7 @@ jobs:
           cat "$V"
           grep -q "esp-idf: .*${EXPECT_IDF}" "$V" || { echo "FEHLER: falscher IDF-Stand"; exit 1; }
           grep -q "arduino: .*${AR_COMMIT:0:7}" "$V" || { echo "FEHLER: falscher Arduino-Stand"; exit 1; }
+          grep -q "tinyusb: .*${TINYUSB_COMMIT:0:7}" "$V" || { echo "FEHLER: falscher TinyUSB-Stand"; exit 1; }
 
       - name: Paket schnueren
         run: |
