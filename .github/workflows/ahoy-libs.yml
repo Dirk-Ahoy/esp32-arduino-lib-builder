@@ -26,8 +26,9 @@ env:
   IDF_BRANCH: release/v5.5
   IDF_TAG: v5.5.5
   EXPECT_IDF: b774170ff4
-  # Komponenten, die aus der Arduino-Abhaengigkeitsliste entfernt werden
-  AHOY_REMOVE_COMPONENTS: "espressif/esp-modbus espressif/esp_modem"
+  # Komponenten, die aus den Abhaengigkeitslisten entfernt werden
+  # esp_matter: braucht zwingend IPv6, Ahoy nutzt Matter nicht
+  AHOY_REMOVE_COMPONENTS: "espressif/esp-modbus espressif/esp_modem espressif/esp_matter"
   # Version im package.json und im Dateinamen
   PKG_VERSION: "3.3.12+ahoy.1"
   PKG_FILE_VERSION: "3.3.12-ahoy.1"

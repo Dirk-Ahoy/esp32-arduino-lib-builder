@@ -39,21 +39,27 @@ if [ -n "$AR_COMMIT" ]; then
 	if [ $? -ne 0 ]; then exit 1; fi
 fi
 
-# Ahoy: nicht benoetigte Komponenten aus der Abhaengigkeitsliste entfernen
-AR_IDF_YML="$AR_COMPS/arduino/idf_component.yml"
+# Ahoy: nicht benoetigte Komponenten aus den Abhaengigkeitslisten entfernen
+# (Arduino-Core und Lib-Builder-Hauptprojekt)
+AHOY_YMLS="$AR_COMPS/arduino/idf_component.yml $AR_ROOT/main/idf_component.yml"
 for comp in $AHOY_REMOVE_COMPONENTS; do
-	if grep -q "^  $comp:" "$AR_IDF_YML"; then
-		awk -v rm="$comp" '
-			/^  [^ #][^:]*:/ { key=$1; sub(/:$/, "", key); skip=(key == rm) }
-			/^[^ ]/ { skip=0 }
-			!skip { print }
-		' "$AR_IDF_YML" > "$AR_IDF_YML.tmp" && mv "$AR_IDF_YML.tmp" "$AR_IDF_YML"
-		if grep -q "^  $comp:" "$AR_IDF_YML"; then
-			echo "ERROR: Komponente $comp konnte nicht entfernt werden"
-			exit 1
+	found=0
+	for yml in $AHOY_YMLS; do
+		if grep -q "^  $comp:" "$yml"; then
+			awk -v rm="$comp" '
+				/^  [^ #][^:]*:/ { key=$1; sub(/:$/, "", key); skip=(key == rm) }
+				/^[^ ]/ { skip=0 }
+				!skip { print }
+			' "$yml" > "$yml.tmp" && mv "$yml.tmp" "$yml"
+			if grep -q "^  $comp:" "$yml"; then
+				echo "ERROR: Komponente $comp konnte nicht aus $yml entfernt werden"
+				exit 1
+			fi
+			echo "Komponente entfernt: $comp ($yml)"
+			found=1
 		fi
-		echo "Komponente entfernt: $comp"
-	else
-		echo "WARNUNG: Komponente $comp nicht in $AR_IDF_YML gefunden"
+	done
+	if [ $found -eq 0 ]; then
+		echo "WARNUNG: Komponente $comp in keiner Abhaengigkeitsliste gefunden"
 	fi
 done
