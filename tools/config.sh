@@ -31,7 +31,8 @@ if [ -z "$CHIP_VARIANT" ]; then
 fi
 
 # Owner of the target ESP32 Arduino repository
-AR_USER="${GITHUB_REPOSITORY_OWNER:-espressif}"
+# Ahoy: Quellen immer von espressif holen, nicht vom Fork-Besitzer
+AR_USER="${AR_USER:-espressif}"
 
 # The full name of the repository
 AR_REPO="$AR_USER/arduino-esp32"

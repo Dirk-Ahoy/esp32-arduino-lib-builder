@@ -1,0 +1,121 @@
+name: Ahoy Arduino Libs
+
+# Baut die IDF-Libs fuer ESP32 und ESP32-S3 mit configs/defconfig.ahoy
+# und veroeffentlicht sie als PlatformIO-Pakete:
+#   framework-arduinoespressif32-esp32-libs
+#   framework-arduinoespressif32-esp32s3-libs
+# Basis: identisch zum offiziellen Paket 3.3.12 (espressif32@8.0.0)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release-Tag, z. B. v3.3.12-ahoy.1 (leer = nur bauen, kein Release)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  # Quellen exakt wie im offiziellen Paket (versions.txt von 3.3.12)
+  AR_USER: espressif
+  AR_SOURCE_BRANCH: master
+  AR_COMMIT: e7c1e8cd4
+  IDF_BRANCH: release/v5.5
+  IDF_TAG: v5.5.5
+  EXPECT_IDF: b774170ff4
+  # Komponenten, die aus der Arduino-Abhaengigkeitsliste entfernt werden
+  AHOY_REMOVE_COMPONENTS: "espressif/esp-modbus espressif/esp_modem"
+  # Version im package.json und im Dateinamen
+  PKG_VERSION: "3.3.12+ahoy.1"
+  PKG_FILE_VERSION: "3.3.12-ahoy.1"
+
+jobs:
+  build:
+    name: Libs fuer ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [esp32, esp32s3]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Abhaengigkeiten installieren
+        run: bash ./tools/prepare-ci.sh
+
+      - name: Libs bauen
+        run: bash ./build.sh -t ${{ matrix.target }}
+
+      - name: Versionen pruefen
+        run: |
+          set -e
+          V=out/tools/esp32-arduino-libs/versions.txt
+          cat "$V"
+          grep -q "esp-idf: .*${EXPECT_IDF}" "$V" || { echo "FEHLER: falscher IDF-Stand"; exit 1; }
+          grep -q "arduino: .*${AR_COMMIT:0:7}" "$V" || { echo "FEHLER: falscher Arduino-Stand"; exit 1; }
+
+      - name: Paket schnueren
+        run: |
+          set -e
+          T=${{ matrix.target }}
+          SRC=out/tools/esp32-arduino-libs/$T
+          test -d "$SRC/lib"
+          cp out/tools/esp32-arduino-libs/versions.txt "$SRC/"
+          cat > "$SRC/package.json" <<JSON
+          {
+            "name": "framework-arduinoespressif32-$T-libs",
+            "version": "$PKG_VERSION",
+            "description": "ESP-IDF support files for the ESP32 Arduino core ($T), Ahoy build",
+            "keywords": ["framework", "arduino", "espressif", "$T"],
+            "license": "LGPL-2.1-or-later",
+            "repository": {
+              "type": "git",
+              "url": "https://github.com/espressif/arduino-esp32"
+            }
+          }
+          JSON
+          ls -la "$SRC"
+          mkdir -p dist
+          (cd "$SRC" && zip -qr "$GITHUB_WORKSPACE/dist/framework-arduinoespressif32-$T-libs-$PKG_FILE_VERSION.zip" .)
+          ls -la dist
+
+      - name: Paket hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: libs-${{ matrix.target }}
+          path: dist/*.zip
+
+      - name: Build-Ordner bei Fehler hochladen
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.target }}
+          path: build
+
+  release:
+    name: Release erstellen
+    needs: build
+    if: ${{ inputs.release_tag != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pakete holen
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: libs-*
+          merge-multiple: true
+
+      - name: Release veroeffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          gh release create "${{ inputs.release_tag }}" dist/*.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Ahoy Arduino Libs ${{ inputs.release_tag }}" \
+            --notes "IDF-Libs fuer ESP32/ESP32-S3 auf Basis Arduino-Core 3.3.12 (IDF v5.5.5) mit configs/defconfig.ahoy."

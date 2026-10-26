@@ -107,6 +107,9 @@ done
 shift $((OPTIND -1))
 CONFIGS=$@
 
+# Ahoy: eigene sdkconfig-Ergaenzungen, immer als LETZTE defconfig anhaengen
+AHOY_DEFCONFIG="configs/defconfig.ahoy"
+
 export IDF_CCACHE_ENABLE=$CCACHE_ENABLE
 
 # C5 only: after the published idf-libs tree exists, rebuild Matter with the
@@ -256,6 +259,7 @@ if [ "$BUILD_TYPE" != "all" ]; then
         for conf in $CONFIGS; do
             configs="$configs;configs/defconfig.$conf"
         done
+        configs="$configs;$AHOY_DEFCONFIG"
 
         echo "idf.py -DIDF_TARGET=\"$target\" -DSDKCONFIG_DEFAULTS=\"$configs\" $BUILD_TYPE"
         rm -rf build sdkconfig
@@ -327,6 +331,7 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
     for defconf in `echo "$target_json" | jq -c '.idf_libs[]' | tr -d '"'`; do
         idf_libs_configs="$idf_libs_configs;configs/defconfig.$defconf"
     done
+    idf_libs_configs="$idf_libs_configs;$AHOY_DEFCONFIG"
 
     echo "* Build IDF-Libs: $idf_libs_configs"
     rm -rf build sdkconfig
@@ -360,6 +365,7 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
         for defconf in `echo "$boot_conf" | jq -c '.[]' | tr -d '"'`; do
             bootloader_configs="$bootloader_configs;configs/defconfig.$defconf";
         done
+        bootloader_configs="$bootloader_configs;$AHOY_DEFCONFIG"
 
         echo "* Build BootLoader: $bootloader_configs"
         rm -rf build sdkconfig
@@ -373,6 +379,7 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
         for defconf in `echo "$mem_conf" | jq -c '.[]' | tr -d '"'`; do
             mem_configs="$mem_configs;configs/defconfig.$defconf";
         done
+        mem_configs="$mem_configs;$AHOY_DEFCONFIG"
 
         echo "* Build Memory Variant: $mem_configs"
         rm -rf build sdkconfig
