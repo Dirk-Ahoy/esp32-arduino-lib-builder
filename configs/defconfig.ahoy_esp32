@@ -1,0 +1,30 @@
+#
+# Ahoy DTU - Ergaenzungen NUR fuer das Target esp32 (ohne S3)
+# Muss NACH defconfig.esp32 und defconfig.ahoy eingelesen werden.
+# Voraussetzung: alle ESP32-DTUs ohne PSRAM (WROOM, z. B. lolin_d32).
+#
+
+#
+# Kein PSRAM: entfernt -mfix-esp32-psram-cache-issue /
+# -mfix-esp32-psram-cache-strategy=memw aus den Compiler-Flags
+# (betrifft IDF-Libs, Arduino-Core, Ahoy und lib_deps).
+# Pruefen nach dem Build: esp32/flags/c_flags ohne "mfix", sdkconfig.h ohne CONFIG_SPIRAM.
+#
+CONFIG_SPIRAM=n
+
+#
+# ULP wird nicht genutzt; die Reservierung belegt RTC-Slow-RAM,
+# in dem auch Ahoys RTCMEM (RTC_NOINIT_ATTR, History) liegt.
+#
+CONFIG_ULP_COPROC_ENABLED=n
+
+#
+# FreeRTOS-Timer-Task ("Tmr Svc"): defconfig.esp32 setzt 4096,
+# Ahoy nutzt keine FreeRTOS-Software-Timer. High-Water-Mark pruefen.
+#
+CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=3072
+
+#
+# Internes RMII-Ethernet (LAN8720 o. ae.) wird nicht genutzt, nur W5500 per SPI
+#
+CONFIG_ETH_USE_ESP32_EMAC=n
