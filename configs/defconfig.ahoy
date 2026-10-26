@@ -16,6 +16,14 @@ CONFIG_LWIP_PPP_SUPPORT=n
 CONFIG_LWIP_ESP_LWIP_ASSERT=n
 CONFIG_VFS_SUPPORT_TERMIOS=n
 
+# Core Locking wie im offiziellen Paket. Wurde bisher von Matter
+# (USE_TCPIP_CORE_LOCK_FOR_THREAD_SAFETY) erzwungen.
+CONFIG_LWIP_TCPIP_CORE_LOCKING=y
+CONFIG_LWIP_CHECK_THREAD_SAFETY=y
+
+# ISR-Stack wie im offiziellen Paket. Ohne Core-Dump faellt er sonst auf 1536.
+CONFIG_FREERTOS_ISR_STACKSIZE=2096
+
 # WICHTIG: Ohne PPP muss Bridge an bleiben!
 # Sonst ist LWIP_ESP_NETIF_DATA=0, esp_netif nutzt netif->state und haelt die
 # WireGuard-Schnittstelle fuer eine eigene -> Absturz (memcmp auf NULL) bzw.
