@@ -26,3 +26,8 @@ dependencies:
     require: public
     rules:
       - if: "idf_version >= 5.4 && target in [esp32s3, esp32p4]"
+  # Ahoy: Versionen wie im offiziellen Paket 3.3.12 festnageln
+  espressif/mdns:
+    version: "==1.13.1"
+  joltwallet/littlefs:
+    version: "==1.22.3"

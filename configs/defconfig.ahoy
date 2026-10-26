@@ -30,6 +30,11 @@ CONFIG_FREERTOS_ISR_STACKSIZE=2096
 # stilles Ueberschreiben von Speicher. Siehe lwipopts.h, LWIP_ESP_NETIF_DATA.
 CONFIG_ESP_NETIF_BRIDGE_EN=y
 
+# Core Locking wie im offiziellen Paket. Wurde bisher von Matter
+# (USE_TCPIP_CORE_LOCK_FOR_THREAD_SAFETY) erzwungen.
+CONFIG_LWIP_TCPIP_CORE_LOCKING=y
+CONFIG_LWIP_CHECK_THREAD_SAFETY=y
+
 #
 # mDNS
 #
@@ -75,6 +80,9 @@ CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=y
 CONFIG_FREERTOS_ENABLE_TASK_SNAPSHOT=n
 CONFIG_ESP_PHY_ENABLE_VERSION_PRINT=n
 CONFIG_HEAP_POISONING_DISABLED=y
+
+# ISR-Stack wie im offiziellen Paket. Ohne Core-Dump faellt er sonst auf 1536.
+CONFIG_FREERTOS_ISR_STACKSIZE=2096
 
 #
 # Zu entfernende Komponenten (nicht per defconfig, sondern im

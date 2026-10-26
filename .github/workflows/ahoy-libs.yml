@@ -60,6 +60,8 @@ jobs:
           grep -q "esp-idf: .*${EXPECT_IDF}" "$V" || { echo "FEHLER: falscher IDF-Stand"; exit 1; }
           grep -q "arduino: .*${AR_COMMIT:0:7}" "$V" || { echo "FEHLER: falscher Arduino-Stand"; exit 1; }
           grep -q "tinyusb: .*${TINYUSB_COMMIT:0:7}" "$V" || { echo "FEHLER: falscher TinyUSB-Stand"; exit 1; }
+          grep -qx "espressif__mdns: 1.13.1" "$V" || { echo "FEHLER: falsche mdns-Version"; exit 1; }
+          grep -qx "joltwallet__littlefs: 1.22.3" "$V" || { echo "FEHLER: falsche LittleFS-Version"; exit 1; }
 
       - name: Paket schnueren
         run: |
