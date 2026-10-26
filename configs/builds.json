@@ -166,7 +166,7 @@
 		},
 		{
 			"target": "esp32",
-			"features":["qio_ram"],
+			"features":["qio_ram","ahoy_esp32"],
 			"idf_libs":["qio","80m"],
 			"bootloaders":[
 				["qio","80m"],
