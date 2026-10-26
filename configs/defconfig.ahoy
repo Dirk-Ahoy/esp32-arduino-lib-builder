@@ -1,6 +1,7 @@
 #
 # Ahoy DTU - sdkconfig-Ergaenzungen fuer esp32-arduino-lib-builder
-# Stand: getestet per Hybrid Compile (pioarduino, IDF 5.5.x) auf ESP32 und ESP32-S3
+# Fork Dirk-Ahoy/esp32-arduino-lib-builder, Branch ahoy-3.3.12 (Arduino 3.3.x / IDF 5.5)
+# Gilt fuer ESP32 und ESP32-S3. Nur-ESP32-Werte stehen in defconfig.ahoy_esp32.
 #
 # Diese Datei muss NACH defconfig.common und den Chip-/Speicher-defconfigs
 # eingelesen werden, damit ihre Werte nicht ueberschrieben werden.
@@ -26,6 +27,9 @@ CONFIG_ESP_NETIF_BRIDGE_EN=y
 # (USE_TCPIP_CORE_LOCK_FOR_THREAD_SAFETY) erzwungen.
 CONFIG_LWIP_TCPIP_CORE_LOCKING=y
 CONFIG_LWIP_CHECK_THREAD_SAFETY=y
+# OFFEN: Der Thread-Safety-Check meldet sich ueber LWIP_ASSERT. Mit
+# CONFIG_LWIP_ESP_LWIP_ASSERT=n (oben) prueft er vermutlich nichts mehr.
+# Test-Build: beide an. Release-Build: beide aus. CORE_LOCKING bleibt immer an.
 
 #
 # mDNS
@@ -47,6 +51,13 @@ CONFIG_ESP_WIFI_ENABLE_WPA3_OWE_STA=n
 CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT=n
 # Stufe 2, erst nach Pruefung aller Router aktivieren:
 # CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=n
+
+#
+# Ethernet: nur W5500 (EMAC beim ESP32 siehe defconfig.ahoy_esp32)
+# CONFIG_ETH_ENABLED und W5500 muessen an bleiben (auch fuer mDNS auf ETH)
+#
+CONFIG_ETH_SPI_ETHERNET_DM9051=n
+CONFIG_ETH_SPI_ETHERNET_KSZ8851SNL=n
 
 #
 # Bluetooth
@@ -77,8 +88,42 @@ CONFIG_HEAP_POISONING_DISABLED=y
 CONFIG_FREERTOS_ISR_STACKSIZE=2096
 
 #
+# Stacks / FreeRTOS
+#
+# common setzt 8192. Ahoy nutzt esp_timer/Ticker nicht direkt.
+# Nach dem Flashen High-Water-Mark des Tasks "esp_timer" pruefen.
+CONFIG_ESP_TIMER_TASK_STACK_SIZE=4096
+# Task-Statistik: von Ahoy nicht genutzt (kein vTaskList/uxTaskGetSystemState)
+CONFIG_FREERTOS_USE_TRACE_FACILITY=n
+CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=n
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=n
+
+#
+# ESP Insights / Diagnose - von Ahoy nicht genutzt
+# (Komponente zusaetzlich aus dem Build nehmen, siehe unten)
+#
+CONFIG_ESP_INSIGHTS_ENABLED=n
+CONFIG_DIAG_ENABLE_METRICS=n
+CONFIG_DIAG_ENABLE_HEAP_METRICS=n
+CONFIG_DIAG_ENABLE_WIFI_METRICS=n
+CONFIG_DIAG_ENABLE_VARIABLES=n
+CONFIG_DIAG_ENABLE_NETWORK_VARIABLES=n
+CONFIG_DIAG_USE_EXTERNAL_LOG_WRAP=n
+
+#
+# Stufe 2 - einzeln aktivieren und testen:
+#
+# Ahoy baut mit -fno-exceptions; danach ist "-fexceptions" in build_unflags ueberfluessig
+# CONFIG_COMPILER_CXX_EXCEPTIONS=n
+# Je Puffer ca. 1,6 KB fester Heap (common: 8); kostet etwas Durchsatz (Web-UI, OTA testen)
+# CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+# Nur Release: kein Stack-Canary (-fstack-protector), Ueberlaeufe fallen dann nicht mehr sofort auf
+# CONFIG_COMPILER_STACK_CHECK_MODE_NONE=y
+
+#
 # Zu entfernende Komponenten (nicht per defconfig, sondern im
 # idf_component.yml bzw. per Builder-Option):
 #   espressif/esp-modbus
 #   espressif/esp_modem
+#   espressif/esp_insights (inkl. esp_diagnostics), espressif/esp_rainmaker
 #
