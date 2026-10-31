@@ -1,6 +1,8 @@
 #
 # Ahoy DTU - Ergaenzungen NUR fuer das Target esp32 (ohne S3)
-# Muss NACH defconfig.esp32 und defconfig.ahoy eingelesen werden.
+# Wird von build.sh (ahoy_configs) automatisch als allerletzte defconfig
+# angehaengt, direkt nach defconfig.ahoy. Werte hier gewinnen also immer.
+# NICHT in configs/builds.json als "feature" eintragen.
 # Voraussetzung: alle ESP32-DTUs ohne PSRAM (WROOM, z. B. lolin_d32).
 #
 

@@ -107,8 +107,17 @@ done
 shift $((OPTIND -1))
 CONFIGS=$@
 
-# Ahoy: eigene sdkconfig-Ergaenzungen, immer als LETZTE defconfig anhaengen
-AHOY_DEFCONFIG="configs/defconfig.ahoy"
+# Ahoy: eigene sdkconfig-Ergaenzungen, immer als LETZTE defconfigs anhaengen:
+# zuerst defconfig.ahoy (alle Chips), danach - falls vorhanden -
+# defconfig.ahoy_<CHIP_VARIANT> (z. B. defconfig.ahoy_esp32) fuer chipspezifische Werte.
+# Benoetigt CHIP_VARIANT, daher erst innerhalb der Target-Schleifen aufrufen.
+ahoy_configs() {
+    local c="configs/defconfig.ahoy"
+    if [ -f "configs/defconfig.ahoy_$CHIP_VARIANT" ]; then
+        c="$c;configs/defconfig.ahoy_$CHIP_VARIANT"
+    fi
+    echo "$c"
+}
 
 export IDF_CCACHE_ENABLE=$CCACHE_ENABLE
 
@@ -259,7 +268,7 @@ if [ "$BUILD_TYPE" != "all" ]; then
         for conf in $CONFIGS; do
             configs="$configs;configs/defconfig.$conf"
         done
-        configs="$configs;$AHOY_DEFCONFIG"
+        configs="$configs;$(ahoy_configs)"
 
         echo "idf.py -DIDF_TARGET=\"$target\" -DSDKCONFIG_DEFAULTS=\"$configs\" $BUILD_TYPE"
         rm -rf build sdkconfig
@@ -331,7 +340,7 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
     for defconf in `echo "$target_json" | jq -c '.idf_libs[]' | tr -d '"'`; do
         idf_libs_configs="$idf_libs_configs;configs/defconfig.$defconf"
     done
-    idf_libs_configs="$idf_libs_configs;$AHOY_DEFCONFIG"
+    idf_libs_configs="$idf_libs_configs;$(ahoy_configs)"
 
     echo "* Build IDF-Libs: $idf_libs_configs"
     rm -rf build sdkconfig
@@ -365,7 +374,7 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
         for defconf in `echo "$boot_conf" | jq -c '.[]' | tr -d '"'`; do
             bootloader_configs="$bootloader_configs;configs/defconfig.$defconf";
         done
-        bootloader_configs="$bootloader_configs;$AHOY_DEFCONFIG"
+        bootloader_configs="$bootloader_configs;$(ahoy_configs)"
 
         echo "* Build BootLoader: $bootloader_configs"
         rm -rf build sdkconfig
@@ -379,7 +388,7 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
         for defconf in `echo "$mem_conf" | jq -c '.[]' | tr -d '"'`; do
             mem_configs="$mem_configs;configs/defconfig.$defconf";
         done
-        mem_configs="$mem_configs;$AHOY_DEFCONFIG"
+        mem_configs="$mem_configs;$(ahoy_configs)"
 
         echo "* Build Memory Variant: $mem_configs"
         rm -rf build sdkconfig
