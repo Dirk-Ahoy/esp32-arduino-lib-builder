@@ -22,6 +22,8 @@ CONFIG_VFS_SUPPORT_TERMIOS=n
 # WireGuard-Schnittstelle fuer eine eigene -> Absturz (memcmp auf NULL) bzw.
 # stilles Ueberschreiben von Speicher. Siehe lwipopts.h, LWIP_ESP_NETIF_DATA.
 CONFIG_ESP_NETIF_BRIDGE_EN=y
+#
+CONFIG_ESP_NETIF_SET_DNS_PER_DEFAULT_NETIF=y
 
 # Core Locking wie im offiziellen Paket. Wurde bisher von Matter
 # (USE_TCPIP_CORE_LOCK_FOR_THREAD_SAFETY) erzwungen.
