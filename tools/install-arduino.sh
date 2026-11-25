@@ -13,7 +13,8 @@ fi
 git -C "$AR_COMPS/arduino" reset --hard -q || exit 1
 
 if [ -n "$AR_COMMIT" ]; then
-    git -C "$AR_COMPS/arduino" fetch --all --tags || exit 1
+    echo "Fetching Arduino commit: $AR_COMMIT"
+    git -C "$AR_COMPS/arduino" fetch origin "$AR_COMMIT" || exit 1
     git -C "$AR_COMPS/arduino" checkout --detach -q "$AR_COMMIT" || exit 1
 else
     if [ -z $AR_SOURCE_BRANCH ]; then

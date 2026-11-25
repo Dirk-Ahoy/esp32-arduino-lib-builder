@@ -21,7 +21,7 @@ env:
   # Quellen exakt wie im offiziellen Paket (versions.txt von 4.0.0)
   AR_USER: espressif
   AR_SOURCE_BRANCH: release/v4.0.x
-  AR_COMMIT: 8f2cdd5bd
+  AR_COMMIT: 8f2cdd5bdfa9892f792dfeeab9190dfabec37589
   TINYUSB_COMMIT: db48be663
   IDF_BRANCH: release/v6.1
   IDF_TAG: v6.1.1
