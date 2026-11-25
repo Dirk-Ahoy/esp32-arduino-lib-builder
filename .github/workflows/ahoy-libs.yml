@@ -1,0 +1,145 @@
+name: Ahoy Arduino Libs
+
+# Baut die IDF-Libs fuer ESP32 und ESP32-S3 mit configs/defconfig.ahoy
+# und veroeffentlicht sie als PlatformIO-Pakete:
+#   framework-arduinoespressif32-esp32-libs
+#   framework-arduinoespressif32-esp32s3-libs
+# Basis: identisch zum offiziellen Paket 4.0.0 (espressif32@8.0.0)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release-Tag, z. B. v4.0.0-ahoy.1 (leer = nur bauen, kein Release)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  # Quellen exakt wie im offiziellen Paket (versions.txt von 4.0.0)
+  AR_USER: espressif
+  AR_SOURCE_BRANCH: release/v4.0.x
+  AR_COMMIT: 8f2cdd5bd
+  TINYUSB_COMMIT: db48be663
+  IDF_BRANCH: release/v6.1
+  IDF_TAG: v6.1.1
+  EXPECT_IDF: 051e4c4eb20
+  # Komponenten, die aus den Abhaengigkeitslisten entfernt werden
+  # esp_matter: braucht zwingend IPv6, Ahoy nutzt Matter nicht
+  AHOY_REMOVE_COMPONENTS: "espressif/esp-modbus espressif/esp_modem espressif/esp_matter"
+  # Version im package.json und im Dateinamen
+  PKG_VERSION: "4.0.0+ahoy.1"
+  PKG_FILE_VERSION: "4.0.0-ahoy.1"
+
+jobs:
+  build:
+    name: Libs fuer ${{ matrix.target }}
+    if: github.ref == 'refs/heads/ahoy-4.0.0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [esp32, esp32s3]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Abhaengigkeiten installieren
+        run: bash ./tools/prepare-ci.sh
+
+      - name: Libs bauen
+        run: bash ./build.sh -t ${{ matrix.target }}
+
+      - name: Versionen pruefen
+        run: |
+          set -e
+          V=out/tools/esp32-arduino-libs/versions.txt
+          cat "$V"
+          [[ $(git -C esp-idf rev-parse HEAD) == "$EXPECT_IDF"* ]] || { echo "FEHLER: falscher IDF-Stand"; exit 1; }
+          [[ $(git -C components/arduino rev-parse HEAD) == "$AR_COMMIT"* ]] || { echo "FEHLER: falscher Arduino-Stand"; exit 1; }
+          [[ $(git -C components/arduino_tinyusb/tinyusb rev-parse HEAD) == "$TINYUSB_COMMIT"* ]] || { echo "FEHLER: falscher TinyUSB-Stand"; exit 1; }
+          grep -qx "espressif__mdns: 1.15.1" "$V" || { echo "FEHLER: falsche mdns-Version"; exit 1; }
+          grep -qx "joltwallet__littlefs: 1.23.1" "$V" || { echo "FEHLER: falsche LittleFS-Version"; exit 1; }
+
+          grep -qx "espressif__w5500: 1.0.1" "$V"
+
+      - name: SDK-Konfiguration pruefen
+        run: |
+          set -euo pipefail
+          T=${{ matrix.target }}
+          SRC=out/tools/esp32-arduino-libs/$T
+          test -f "$SRC/sdkconfig"
+          for key in CONFIG_ESP_NETIF_SET_DNS_PER_DEFAULT_NETIF CONFIG_LWIP_TCPIP_CORE_LOCKING CONFIG_ESP_NETIF_BRIDGE_EN; do
+            grep -qx "$key=y" "$SRC/sdkconfig" || { echo "Missing $key"; exit 1; }
+          done
+          for key in CONFIG_BT_ENABLED CONFIG_LWIP_IPV6; do
+            if grep -qx "$key=y" "$SRC/sdkconfig"; then echo "Unexpected $key"; exit 1; fi
+          done
+          if [ "$T" = esp32 ] && grep -qx 'CONFIG_SPIRAM=y' "$SRC/sdkconfig"; then exit 1; fi
+          test -f "$SRC/lib/libespressif__w5500.a"
+
+      - name: Paket schnueren
+        run: |
+          set -e
+          T=${{ matrix.target }}
+          SRC=out/tools/esp32-arduino-libs/$T
+          test -d "$SRC/lib"
+          cp out/tools/esp32-arduino-libs/versions.txt "$SRC/"
+          cat > "$SRC/package.json" <<JSON
+          {
+            "name": "framework-arduinoespressif32-$T-libs",
+            "version": "$PKG_VERSION",
+            "description": "ESP-IDF support files for the ESP32 Arduino core ($T), Ahoy build",
+            "keywords": ["framework", "arduino", "espressif", "$T"],
+            "license": "LGPL-2.1-or-later",
+            "repository": {
+              "type": "git",
+              "url": "https://github.com/espressif/arduino-esp32"
+            }
+          }
+          JSON
+          ls -la "$SRC"
+          mkdir -p dist
+          (cd "$SRC" && zip -qr "$GITHUB_WORKSPACE/dist/framework-arduinoespressif32-$T-libs-$PKG_FILE_VERSION.zip" .)
+          ls -la dist
+
+      - name: Paket hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: libs-${{ matrix.target }}
+          path: dist/*.zip
+
+      - name: Build-Ordner bei Fehler hochladen
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.target }}
+          path: build
+
+  release:
+    name: Release erstellen
+    needs: build
+    if: ${{ github.ref == 'refs/heads/ahoy-4.0.0' && inputs.release_tag == 'v4.0.0-ahoy.1' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pakete holen
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: libs-*
+          merge-multiple: true
+
+      - name: Release veroeffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          ls -la dist
+          gh release create "${RELEASE_TAG}" dist/*.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Ahoy Arduino Libs $RELEASE_TAG" \
+            --notes "IDF-Libs fuer ESP32/ESP32-S3 auf Basis Arduino-Core 4.0.0 (IDF v6.1.1) mit configs/defconfig.ahoy."

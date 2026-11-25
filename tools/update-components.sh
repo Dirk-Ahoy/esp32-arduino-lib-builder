@@ -17,9 +17,13 @@ else
     git -C "$TINYUSB_REPO_DIR" reset --hard && \
     git -C "$TINYUSB_REPO_DIR" clean -fd && \
     git -C "$TINYUSB_REPO_DIR" fetch && \
-    git -C "$TINYUSB_REPO_DIR" pull --ff-only
+    { [ -n "$TINYUSB_COMMIT" ] || git -C "$TINYUSB_REPO_DIR" pull --ff-only; }
 fi
 if [ $? -ne 0 ]; then exit 1; fi
+
+if [ -n "$TINYUSB_COMMIT" ]; then
+    git -C "$TINYUSB_REPO_DIR" checkout -q "$TINYUSB_COMMIT" || exit 1
+fi
 
 # Fixes we cannot wait for upstream on, see patches/tinyusb/README.md
 for patch in "$TINYUSB_PATCH_DIR"/*.diff; do

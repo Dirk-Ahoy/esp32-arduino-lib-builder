@@ -206,6 +206,14 @@ done
 shift $((OPTIND -1))
 CONFIGS=$@
 
+ahoy_configs() {
+    local c="configs/defconfig.ahoy"
+    if [ -f "configs/defconfig.ahoy_$CHIP_VARIANT" ]; then
+        c="$c;configs/defconfig.ahoy_$CHIP_VARIANT"
+    fi
+    echo "$c"
+}
+
 export IDF_CCACHE_ENABLE=$CCACHE_ENABLE
 
 # C5 only: after the published idf-libs tree exists, rebuild Matter with the
@@ -437,6 +445,8 @@ if [ "$BUILD_TYPE" != "all" ]; then
             configs="$configs;configs/defconfig.$conf"
         done
 
+        configs="$configs;$(ahoy_configs)"
+
         echo "idf.py -DIDF_TARGET=\"$target\" -DSDKCONFIG_DEFAULTS=\"$configs\" $BUILD_TYPE"
         prepare_build_dir "$target" "$configs"
         idf.py -DIDF_TARGET="$target" -DSDKCONFIG_DEFAULTS="$configs" $BUILD_TYPE
@@ -512,6 +522,8 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
         idf_libs_configs="$idf_libs_configs;configs/defconfig.$defconf"
     done
 
+    idf_libs_configs="$idf_libs_configs;$(ahoy_configs)"
+
     echo "* Build IDF-Libs: $idf_libs_configs"
     prepare_build_dir "$target" "$idf_libs_configs"
     idf.py -DIDF_TARGET="$target" -DSDKCONFIG_DEFAULTS="$idf_libs_configs" idf-libs
@@ -547,6 +559,8 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
             bootloader_configs="$bootloader_configs;configs/defconfig.$defconf";
         done
 
+        bootloader_configs="$bootloader_configs;$(ahoy_configs)"
+
         echo "* Build BootLoader: $bootloader_configs"
         prepare_build_dir "$target" "$bootloader_configs"
         idf.py -DIDF_TARGET="$target" -DSDKCONFIG_DEFAULTS="$bootloader_configs" copy-bootloader
@@ -560,6 +574,8 @@ for target_json in `jq -c '.targets[]' configs/builds.json`; do
         for defconf in `echo "$mem_conf" | jq -c '.[]' | tr -d '"'`; do
             mem_configs="$mem_configs;configs/defconfig.$defconf";
         done
+
+        mem_configs="$mem_configs;$(ahoy_configs)"
 
         echo "* Build Memory Variant: $mem_configs"
         prepare_build_dir "$target" "$mem_configs"

@@ -28,3 +28,10 @@ dependencies:
     require: public
     rules:
       - if: "idf_version >= 5.4 && target in [esp32p4]"
+  # Ahoy: match official Arduino 4.0.0 library versions
+  espressif/mdns:
+    version: "==1.15.1"
+  joltwallet/littlefs:
+    version: "==1.23.1"
+  espressif/w5500:
+    version: "==1.0.1"

@@ -1,0 +1,6 @@
+# Shell-Scripts und Konfigurationen immer mit LF einchecken (Windows-Schutz)
+*.sh      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+configs/* text eol=lf
